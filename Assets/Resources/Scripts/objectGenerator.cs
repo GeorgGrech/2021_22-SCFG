@@ -1,17 +1,50 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+
+/// <summary>
+/// Reaction Time Game
+/// --------------------
+/// Our reaction time is measured by the time taken for use to see something
+/// and take action about it.
+/// 
+/// We will need to ask the user to input his/her name.
+/// 
+/// In this case, we are going to generate a square every random interval
+/// for 15 times. We are going to measure the time FOR EACH square generated
+/// between the square being generated, and us clicking on the square.
+/// 
+/// Each box will be a round, so we will inform the user before each box is going
+/// to be generated. measure the reaction time, and move to the next round, informing
+/// the user of which round he/she is in.
+/// 
+/// After 15 rounds, the average reaction time of the user will be shown and the game
+/// ends.
+/// </summary>
 
 public class objectGenerator : MonoBehaviour
 {
-    
     /// <summary>
     /// Lecturer's code
     /// </summary>
     GameObject square, parentObject;
+    private bool mouseEnable;
+    float keyboardSpeed;
+    float[] reactionTime;
+    string playerName;
+    int squareCounter;
+
+    Text inputSelectorText, roundTimerText;
     // Start is called before the first frame update
     void Start()
     {
+        //get the input selector text
+        inputSelectorText = GameObject.Find("InputSelector").GetComponent<Text>();
+        roundTimerText = GameObject.Find("RoundTimer").GetComponent<Text>();
+        inputSelectorText.text = "M";
+        mouseEnable = true;
+
         squarecounter = 0;
         //1. Load square template from resources
         square = Resources.Load<GameObject>("Prefabs/Square");
@@ -57,6 +90,29 @@ public class objectGenerator : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            if (mouseEnable)
+                mouseEnable = false;
+                inputSelectorText.text = "M";
+            else
+                mouseEnable = true;
+            
+        }
+
+        if (mouseEnable == true)
+        {
+            MouseMovement();
+        }
+        else
+        {
+            KeyboardMovement(keyboardSpeed);
+        }
+
+    }
+
+    void MouseMovement()
+    {
         float mouseX = Input.mousePosition.x;
         float mouseY = Input.mousePosition.y;
 
@@ -64,7 +120,39 @@ public class objectGenerator : MonoBehaviour
 
         parentObject.transform.position = new Vector3(asterixPosition.x, asterixPosition.y);
 
+        if (Input.GetMouseButtonDown(0))
+        {
+            Debug.Log(Time.time);
+        }
     }
+
+    void KeyboardMovement(float keyspeed)
+    {
+        parentObject.transform.Translate(Vector3.right * Input.GetAxis("Horizontal") * keyspeed * Time.deltaTime);
+        parentObject.transform.Translate(Vector3.up * Input.GetAxis("Vertical") * keyspeed * Time.deltaTime);
+
+
+        /*
+
+        if(Input.GetKey(KeyCode.LeftArrow))
+        {
+            transform.Translate(new Vector3(10f, 0f, 0f) * Time.deltaTime, Space.World);
+        }
+        else if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
+        {
+            transform.Translate(new Vector3(-10f, 0f, 0f) * Time.deltaTime, Space.World);
+        }
+        else if (Input.GetKey(KeyCode.UpArrow))
+        {
+            transform.Translate(new Vector3(0f, -10f, 0f) * Time.deltaTime, Space.World);
+        }
+        else if (Input.GetKey(KeyCode.DownArrow))
+        {
+            transform.Translate(new Vector3(0f, 10f, 0f) * Time.deltaTime, Space.World);
+        }
+        */
+    }
+
 
 
     /// <summary>
