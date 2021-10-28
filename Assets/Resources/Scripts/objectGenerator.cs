@@ -3,47 +3,102 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Reaction Time Game
-/// --------------------
-/// Our reaction time is measured by the time taken for use to see something
-/// and take action about it.
-/// 
-/// We will need to ask the user to input his/her name.
-/// 
-/// In this case, we are going to generate a square every random interval
-/// for 15 times. We are going to measure the time FOR EACH square generated
-/// between the square being generated, and us clicking on the square.
-/// 
-/// Each box will be a round, so we will inform the user before each box is going
-/// to be generated. measure the reaction time, and move to the next round, informing
-/// the user of which round he/she is in.
-/// 
-/// After 15 rounds, the average reaction time of the user will be shown and the game
-/// ends.
-/// </summary>
-
 public class objectGenerator : MonoBehaviour
 {
-    /// <summary>
-    /// Lecturer's code
-    /// </summary>
-    GameObject square, parentObject;
-    private bool mouseEnable;
-    float keyboardSpeed;
-    float[] reactionTime;
+
+    //Reaction Time Game
+    //------------------
+    //Our reaction time is measured by the time taken for us to see something
+    //and take action about it.
+
+    //We will need to ask the user to input his/her name.
+
+    //In this case, we are going to generate a square every RANDOM interval
+    //for 15 times. We are going to measure the time FOR EACH square generated
+    //between the square being generated, and us clicking on the square.
+
+    //Each box will be a round, so we will inform the user before each box is going 
+    //to be generated, measure the reaction time, and move to the next round, informing
+    //the user of which round he/she is in.
+
+    //After 15 rounds, the average reaction time of the user will be shown and the game
+    //ends.
+
+    bool usingMouse,gameStarted;
+
+    public float keyboardSpeed;
+
+    float[] reactionTimes;
+
     string playerName;
-    int squareCounter;
+
+    int squarecounter;
 
     Text inputSelectorText, roundTimerText;
+
+    GameObject square, parentObject;
+
+
+    //UI Variables
+    GameObject hudPrefab, menuPrefab, hudInstance, menuInstance;
+
+    float timeToCompareTo;
+
     // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
+        gameStarted = false;
+        //the name of the prefab in the actual folder is CaseSenSiTive
+        menuPrefab = Resources.Load<GameObject>("Prefabs/StartMenu");
+        //hud prefab in the same way
+        hudPrefab = Resources.Load<GameObject>("Prefabs/HUD");
+        //draw the menu in the middle of the screen
+        setupMenu();
+    }
+
+    void setupMenu()
+    {
+        menuInstance = Instantiate(menuPrefab, Vector3.zero, Quaternion.identity);
+
+        //PlayerName + StartButton
+        GameObject.Find("StartButton").GetComponent<Button>().onClick.AddListener(
+            () => {
+                playerName = GameObject.Find("PlayerName").GetComponent<InputField>().text;
+                Debug.Log("Player name is: " + playerName);
+                Destroy(menuInstance);
+                startRound();
+            }
+        );
+    }
+
+    void backToMenu()
+    {
+        Destroy(hudInstance);
+        Destroy(parentObject);
+        gameStarted = false;
+        setupMenu();
+    }
+
+    int counter = 0;
+    void showDurationBetweenClicks()
+    {
+        counter++;
+        Debug.Log(Time.time - timeToCompareTo);
+        timeToCompareTo = Time.time;    
+    }
+
+    void startRound()
+    {
+        hudInstance = Instantiate(hudPrefab, Vector3.zero, Quaternion.identity);
+        timeToCompareTo = Time.time;
         //get the input selector text
         inputSelectorText = GameObject.Find("InputSelector").GetComponent<Text>();
+        //round timer text
         roundTimerText = GameObject.Find("RoundTimer").GetComponent<Text>();
+
         inputSelectorText.text = "M";
-        mouseEnable = true;
+
+        usingMouse = true;
 
         squarecounter = 0;
         //1. Load square template from resources
@@ -56,13 +111,14 @@ public class objectGenerator : MonoBehaviour
         generateNSquares(5);
 
         parentObject.transform.localScale = new Vector3(0.25f, 0.25f);
-    }
 
+        gameStarted = true;
+    }
     //generate N squares horizontally
 
     //modify this code to generate a full row, a full column, one diagonal going up
     //and the opposite as well (similar to the English flag)
-    int squarecounter;
+
     GameObject makeOneSquare(float x, float y, GameObject myparentobject)
     {
         GameObject tempSquare = Instantiate(square, new Vector3(x, y), Quaternion.identity);
@@ -86,32 +142,7 @@ public class objectGenerator : MonoBehaviour
         }
     }
 
-
-    // Update is called once per frame
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            if (mouseEnable)
-                mouseEnable = false;
-                inputSelectorText.text = "M";
-            else
-                mouseEnable = true;
-            
-        }
-
-        if (mouseEnable == true)
-        {
-            MouseMovement();
-        }
-        else
-        {
-            KeyboardMovement(keyboardSpeed);
-        }
-
-    }
-
-    void MouseMovement()
+    void mouseControl()
     {
         float mouseX = Input.mousePosition.x;
         float mouseY = Input.mousePosition.y;
@@ -119,40 +150,52 @@ public class objectGenerator : MonoBehaviour
         Vector3 asterixPosition = Camera.main.ScreenToWorldPoint(new Vector3(mouseX, mouseY, 0f));
 
         parentObject.transform.position = new Vector3(asterixPosition.x, asterixPosition.y);
-
-        if (Input.GetMouseButtonDown(0))
-        {
-            Debug.Log(Time.time);
-        }
     }
 
-    void KeyboardMovement(float keyspeed)
+    void keyboardControl(float keyspeed)
     {
         parentObject.transform.Translate(Vector3.right * Input.GetAxis("Horizontal") * keyspeed * Time.deltaTime);
         parentObject.transform.Translate(Vector3.up * Input.GetAxis("Vertical") * keyspeed * Time.deltaTime);
-
-
-        /*
-
-        if(Input.GetKey(KeyCode.LeftArrow))
-        {
-            transform.Translate(new Vector3(10f, 0f, 0f) * Time.deltaTime, Space.World);
-        }
-        else if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
-        {
-            transform.Translate(new Vector3(-10f, 0f, 0f) * Time.deltaTime, Space.World);
-        }
-        else if (Input.GetKey(KeyCode.UpArrow))
-        {
-            transform.Translate(new Vector3(0f, -10f, 0f) * Time.deltaTime, Space.World);
-        }
-        else if (Input.GetKey(KeyCode.DownArrow))
-        {
-            transform.Translate(new Vector3(0f, 10f, 0f) * Time.deltaTime, Space.World);
-        }
-        */
     }
 
+
+    // Update is called once per frame
+    void Update()
+    {
+        //only happens if gameStarted is true
+        if (gameStarted)
+        {
+            if (usingMouse)
+            {
+                if (inputSelectorText.text != "M")
+                    inputSelectorText.text = "M";
+                mouseControl();
+
+            }
+            else
+            {
+                if (inputSelectorText.text != "K")
+                    inputSelectorText.text = "K";
+                keyboardControl(keyboardSpeed);
+            }
+
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                usingMouse = !usingMouse;
+            }
+
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                backToMenu();
+            }
+
+            if (Input.GetMouseButtonDown(0))
+            {
+                showDurationBetweenClicks();
+            }
+        }
+
+    }
 
 
     /// <summary>
