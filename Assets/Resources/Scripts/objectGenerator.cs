@@ -24,6 +24,15 @@ public class objectGenerator : MonoBehaviour
     //After 15 rounds, the average reaction time of the user will be shown and the game
     //ends.
 
+    //After the player enters his or her name and presses start, I want to show the following
+    //instruction:
+    //A Square will appear on a random location of the screen, click on it as quickly as you can.
+    //After 1 second, I want that text to become a countdown from 3.
+    //When the countdown is 0, the countdown disappears.
+    //After a random interval, a box is spawned and the time is taken.
+    //I will then measure the time for the player to react to the box being spawned.
+    //That number is the score of round 1.
+
     bool usingMouse,gameStarted;
 
     public float keyboardSpeed;
@@ -37,40 +46,75 @@ public class objectGenerator : MonoBehaviour
     Text inputSelectorText, roundTimerText;
 
     GameObject square, parentObject;
-
-
+    
     //UI Variables
-    GameObject hudPrefab, menuPrefab, hudInstance, menuInstance;
+    GameObject hudPrefab,menuPrefab,countDownPrefab,hudInstance,menuInstance,countdownInstance;
 
     float timeToCompareTo;
 
+    
+    
     // Start is called before the first frame update
-    private void Start()
+    void Start()
     {
         gameStarted = false;
         //the name of the prefab in the actual folder is CaseSenSiTive
         menuPrefab = Resources.Load<GameObject>("Prefabs/StartMenu");
         //hud prefab in the same way
         hudPrefab = Resources.Load<GameObject>("Prefabs/HUD");
+        //countdown prefab in the same way
+        countDownPrefab = Resources.Load<GameObject>("Prefabs/CountDown");
         //draw the menu in the middle of the screen
         setupMenu();
     }
 
     void setupMenu()
     {
-        menuInstance = Instantiate(menuPrefab, Vector3.zero, Quaternion.identity);
+        menuInstance = Instantiate(menuPrefab,Vector3.zero,Quaternion.identity);
 
         //PlayerName + StartButton
         GameObject.Find("StartButton").GetComponent<Button>().onClick.AddListener(
             () => {
                 playerName = GameObject.Find("PlayerName").GetComponent<InputField>().text;
-                Debug.Log("Player name is: " + playerName);
+                Debug.Log("Player name is: "+ playerName);
+                //destroy the menu
                 Destroy(menuInstance);
-                startRound();
+                //start the round
+                StartCoroutine(showInstructions());
+                
             }
         );
     }
 
+    //show instructions for one second
+    IEnumerator showInstructions()
+    {
+        countdownInstance = Instantiate(countDownPrefab, Vector3.zero, Quaternion.identity);
+        countdownInstance.GetComponentInChildren<Text>().text =
+            "A square will appear on a random location of the screen.\n Click on it as quickly as you can!";
+        yield return new WaitForSeconds(1f);
+        yield return countDown();
+    }   
+
+    //count down from 3
+    int countdownCounter = 3;
+    IEnumerator countDown()
+    {
+        while (countdownCounter > 0)
+        {
+            countdownInstance.GetComponentInChildren<Text>().text = countdownCounter.ToString();
+            yield return new WaitForSeconds(1f);
+            countdownCounter--;
+
+        }
+        Destroy(countdownInstance);
+        startRound();
+        yield return null;
+    }
+
+
+    //when escape is pressed while the round is started, the hud and game should stop and I should go back
+    //to the menu.
     void backToMenu()
     {
         Destroy(hudInstance);
@@ -83,13 +127,13 @@ public class objectGenerator : MonoBehaviour
     void showDurationBetweenClicks()
     {
         counter++;
-        Debug.Log(Time.time - timeToCompareTo);
-        timeToCompareTo = Time.time;    
+        Debug.Log(counter+":"+(Time.time - timeToCompareTo));
+        timeToCompareTo = Time.time;
     }
 
     void startRound()
     {
-        hudInstance = Instantiate(hudPrefab, Vector3.zero, Quaternion.identity);
+        hudInstance = Instantiate(hudPrefab,Vector3.zero,Quaternion.identity);
         timeToCompareTo = Time.time;
         //get the input selector text
         inputSelectorText = GameObject.Find("InputSelector").GetComponent<Text>();
@@ -112,8 +156,20 @@ public class objectGenerator : MonoBehaviour
 
         parentObject.transform.localScale = new Vector3(0.25f, 0.25f);
 
-        gameStarted = true;
+        gameStarted=true;
+
+        
     }
+
+    /* TODO
+    void generateRandomSquare()
+    {
+        Vector3 viewPos = cam.WorldToViewportPoint(target.position);
+
+        float xPos = Random.RandomRange(1, 2);
+    }
+    */
+
     //generate N squares horizontally
 
     //modify this code to generate a full row, a full column, one diagonal going up
@@ -183,7 +239,7 @@ public class objectGenerator : MonoBehaviour
             {
                 usingMouse = !usingMouse;
             }
-
+            
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 backToMenu();
