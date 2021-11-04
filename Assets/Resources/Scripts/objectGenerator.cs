@@ -24,16 +24,51 @@ public class objectGenerator : MonoBehaviour
     //After 15 rounds, the average reaction time of the user will be shown and the game
     //ends.
 
-    //After the player enters his or her name and presses start, I want to show the following
-    //instruction:
-    //A Square will appear on a random location of the screen, click on it as quickly as you can.
-    //After 1 second, I want that text to become a countdown from 3.
-    //When the countdown is 0, the countdown disappears.
-    //After a random interval, a box is spawned and the time is taken.
-    //I will then measure the time for the player to react to the box being spawned.
-    //That number is the score of round 1.
 
-    bool usingMouse,gameStarted;
+    //After the player enters his/her name and presses 'start', I want to show the following
+    //instruction: 
+    //A square will appear on a random location of the screen, click on it as quickly as you can
+    //after 1second, I want that text to become a countdown from 3
+    //when the countdown is 0, the countdown disappears
+    //after a random interval, a box is spawned and the time is taken
+    //I will then measure the time taken for the player to react to the box being spawned
+    //that number is the score of round 1.
+
+
+    //Each round of the game, will work as follows:
+    //1. I will wait for a random interval, after which I will generate a random square 
+    //   on screen.
+    //2. I will save the time when the random square was generated
+    //3. When the player click ON THE SQUARE only, the square will disappear and the round ends.
+    //4. I will display the reaction time of that round and the round number
+    //5. Countdown again, and back to 1.
+
+
+    void playRound()
+    {
+        StartCoroutine(generateRandomSquare());
+    }
+
+    GameObject enemyBoxParent;
+
+    IEnumerator generateRandomSquare()
+    {
+        //1. Wait a random interval
+        yield return new WaitForSeconds(Random.Range(0f, 2f));
+        //save the time when the box is generated
+        timeToCompareTo = Time.time;
+        float randomX = Random.Range(-4.5f, 4.5f);
+        float randomY = Random.Range(-4.5f, 4.5f);
+
+        GameObject enemySquare = makeOneSquare(randomX, randomY, enemyBoxParent);
+        enemySquare.AddComponent<BoxCollider2D>();
+        //coroutine ends here
+        yield return null;
+
+    }
+
+
+    bool usingMouse, gameStarted;
 
     public float keyboardSpeed;
 
@@ -46,14 +81,14 @@ public class objectGenerator : MonoBehaviour
     Text inputSelectorText, roundTimerText;
 
     GameObject square, parentObject;
-    
+
     //UI Variables
-    GameObject hudPrefab,menuPrefab,countDownPrefab,hudInstance,menuInstance,countdownInstance;
+    GameObject hudPrefab, menuPrefab, countDownPrefab, hudInstance, menuInstance, countDownInstance;
 
     float timeToCompareTo;
 
-    
-    
+
+
     // Start is called before the first frame update
     void Start()
     {
@@ -64,57 +99,65 @@ public class objectGenerator : MonoBehaviour
         hudPrefab = Resources.Load<GameObject>("Prefabs/HUD");
         //countdown prefab in the same way
         countDownPrefab = Resources.Load<GameObject>("Prefabs/CountDown");
+
+        //group all enemy boxes under one parent
+        enemyBoxParent = new GameObject();
         //draw the menu in the middle of the screen
         setupMenu();
     }
 
+
     void setupMenu()
     {
-        menuInstance = Instantiate(menuPrefab,Vector3.zero,Quaternion.identity);
+        menuInstance = Instantiate(menuPrefab, Vector3.zero, Quaternion.identity);
 
         //PlayerName + StartButton
         GameObject.Find("StartButton").GetComponent<Button>().onClick.AddListener(
-            () => {
+            () =>
+            {
                 playerName = GameObject.Find("PlayerName").GetComponent<InputField>().text;
-                Debug.Log("Player name is: "+ playerName);
+                Debug.Log("Player name is: " + playerName);
                 //destroy the menu
                 Destroy(menuInstance);
                 //start the round
                 StartCoroutine(showInstructions());
-                
+
             }
         );
+
     }
 
     //show instructions for one second
     IEnumerator showInstructions()
     {
-        countdownInstance = Instantiate(countDownPrefab, Vector3.zero, Quaternion.identity);
-        countdownInstance.GetComponentInChildren<Text>().text =
-            "A square will appear on a random location of the screen.\n Click on it as quickly as you can!";
+        //show on screen
+        countDownInstance = Instantiate(countDownPrefab, Vector3.zero, Quaternion.identity);
+        countDownInstance.GetComponentInChildren<Text>().text =
+        "A square will appear on a random location of the screen!\nClick on it as quickly as you can!";
         yield return new WaitForSeconds(1f);
-        yield return countDown();
-    }   
 
-    //count down from 3
+        yield return countDown();
+    }
+
     int countdownCounter = 3;
+    //count down from 3
     IEnumerator countDown()
     {
         while (countdownCounter > 0)
         {
-            countdownInstance.GetComponentInChildren<Text>().text = countdownCounter.ToString();
+            countDownInstance.GetComponentInChildren<Text>().text = countdownCounter.ToString();
             yield return new WaitForSeconds(1f);
             countdownCounter--;
-
         }
-        Destroy(countdownInstance);
-        startRound();
+        Destroy(countDownInstance);
+        startGame();
         yield return null;
     }
 
 
     //when escape is pressed while the round is started, the hud and game should stop and I should go back
     //to the menu.
+
     void backToMenu()
     {
         Destroy(hudInstance);
@@ -127,13 +170,13 @@ public class objectGenerator : MonoBehaviour
     void showDurationBetweenClicks()
     {
         counter++;
-        Debug.Log(counter+":"+(Time.time - timeToCompareTo));
+        Debug.Log(counter + ":" + (Time.time - timeToCompareTo));
         timeToCompareTo = Time.time;
     }
 
-    void startRound()
+    void startGame()
     {
-        hudInstance = Instantiate(hudPrefab,Vector3.zero,Quaternion.identity);
+        hudInstance = Instantiate(hudPrefab, Vector3.zero, Quaternion.identity);
         timeToCompareTo = Time.time;
         //get the input selector text
         inputSelectorText = GameObject.Find("InputSelector").GetComponent<Text>();
@@ -156,20 +199,9 @@ public class objectGenerator : MonoBehaviour
 
         parentObject.transform.localScale = new Vector3(0.25f, 0.25f);
 
-        gameStarted=true;
-
-        
+        gameStarted = true;
+        playRound();
     }
-
-    /* TODO
-    void generateRandomSquare()
-    {
-        Vector3 viewPos = cam.WorldToViewportPoint(target.position);
-
-        float xPos = Random.RandomRange(1, 2);
-    }
-    */
-
     //generate N squares horizontally
 
     //modify this code to generate a full row, a full column, one diagonal going up
@@ -206,6 +238,19 @@ public class objectGenerator : MonoBehaviour
         Vector3 asterixPosition = Camera.main.ScreenToWorldPoint(new Vector3(mouseX, mouseY, 0f));
 
         parentObject.transform.position = new Vector3(asterixPosition.x, asterixPosition.y);
+        //this method will use raycast to shoot a ray in 
+        //this means left click
+        if (Input.GetMouseButtonDown(0))
+        {
+            RaycastHit2D hit = Physics2D.Raycast(asterixPosition, Vector3.forward);
+            if (hit.collider != null)
+            {
+                Destroy(hit.collider.gameObject);
+                float reactiontime = Time.time - timeToCompareTo;
+                Debug.Log(reactiontime);
+            }
+        }
+
     }
 
     void keyboardControl(float keyspeed)
@@ -239,7 +284,7 @@ public class objectGenerator : MonoBehaviour
             {
                 usingMouse = !usingMouse;
             }
-            
+
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 backToMenu();
@@ -252,7 +297,6 @@ public class objectGenerator : MonoBehaviour
         }
 
     }
-
 
     /// <summary>
     /// Code used previously for square star creation
