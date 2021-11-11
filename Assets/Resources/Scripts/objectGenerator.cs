@@ -46,7 +46,19 @@ public class objectGenerator : MonoBehaviour
 
     void playRound()
     {
+
+
         StartCoroutine(generateRandomSquare());
+    }
+
+
+    IEnumerator gotoNextRound()
+    {
+        //first show the countdown
+        currentRound++;
+        countdownCounter = 3;
+        yield return showInstructions();
+
     }
 
     GameObject enemyBoxParent;
@@ -78,6 +90,8 @@ public class objectGenerator : MonoBehaviour
 
     int squarecounter;
 
+    int currentRound;
+
     Text inputSelectorText, roundTimerText;
 
     GameObject square, parentObject;
@@ -93,6 +107,10 @@ public class objectGenerator : MonoBehaviour
     void Start()
     {
         gameStarted = false;
+
+        reactionTimes = new float[10];
+
+        currentRound = 1;
         //the name of the prefab in the actual folder is CaseSenSiTive
         menuPrefab = Resources.Load<GameObject>("Prefabs/StartMenu");
         //hud prefab in the same way
@@ -119,6 +137,8 @@ public class objectGenerator : MonoBehaviour
                 Debug.Log("Player name is: " + playerName);
                 //destroy the menu
                 Destroy(menuInstance);
+
+
                 //start the round
                 StartCoroutine(showInstructions());
 
@@ -131,11 +151,25 @@ public class objectGenerator : MonoBehaviour
     IEnumerator showInstructions()
     {
         //show on screen
+
         countDownInstance = Instantiate(countDownPrefab, Vector3.zero, Quaternion.identity);
-        countDownInstance.GetComponentInChildren<Text>().text =
+        if (currentRound == 1)
+        {
+            countDownInstance.GetComponentInChildren<Text>().text =
         "A square will appear on a random location of the screen!\nClick on it as quickly as you can!";
+        }
+        else
+        {
+            countDownInstance.GetComponentInChildren<Text>().text =
+                "Get ready for Round: " + currentRound;
+            roundTimerText.text = currentRound.ToString();
+        }
         yield return new WaitForSeconds(1f);
 
+        //round counter in the top left corner
+
+
+        Debug.Log(countdownCounter);
         yield return countDown();
     }
 
@@ -176,9 +210,26 @@ public class objectGenerator : MonoBehaviour
 
     void startGame()
     {
-        hudInstance = Instantiate(hudPrefab, Vector3.zero, Quaternion.identity);
+
         timeToCompareTo = Time.time;
         //get the input selector text
+
+        //1. Load square template from resources
+        square = Resources.Load<GameObject>("Prefabs/Square");
+        //2. Instantiate a square in the MIDDLE of the screen at 0 degree rotation
+        // GameObject tempSquare = Instantiate(square,new Vector3(0f,0f),Quaternion.identity); 
+        //3. Set a random colour for the square
+        //  tempSquare.GetComponent<SpriteRenderer>().color = Random.ColorHSV();
+        //4. Find the coordinates of the edges of the square
+        if (currentRound == 1)
+        {
+            hudInstance = Instantiate(hudPrefab, Vector3.zero, Quaternion.identity);
+
+            generateNSquares(5);
+
+            parentObject.transform.localScale = new Vector3(0.25f, 0.25f);
+        }
+
         inputSelectorText = GameObject.Find("InputSelector").GetComponent<Text>();
         //round timer text
         roundTimerText = GameObject.Find("RoundTimer").GetComponent<Text>();
@@ -188,16 +239,7 @@ public class objectGenerator : MonoBehaviour
         usingMouse = true;
 
         squarecounter = 0;
-        //1. Load square template from resources
-        square = Resources.Load<GameObject>("Prefabs/Square");
-        //2. Instantiate a square in the MIDDLE of the screen at 0 degree rotation
-        // GameObject tempSquare = Instantiate(square,new Vector3(0f,0f),Quaternion.identity); 
-        //3. Set a random colour for the square
-        //  tempSquare.GetComponent<SpriteRenderer>().color = Random.ColorHSV();
-        //4. Find the coordinates of the edges of the square
-        generateNSquares(5);
 
-        parentObject.transform.localScale = new Vector3(0.25f, 0.25f);
 
         gameStarted = true;
         playRound();
@@ -247,10 +289,44 @@ public class objectGenerator : MonoBehaviour
             {
                 Destroy(hit.collider.gameObject);
                 float reactiontime = Time.time - timeToCompareTo;
+                //-1 becase arrays start from 0
+                reactionTimes[currentRound - 1] = reactiontime;
                 Debug.Log(reactiontime);
+                if (currentRound < 10)
+                {
+
+                    Debug.Log(currentRound);
+                    StartCoroutine(gotoNextRound());
+                }
+                else
+                {
+                    StartCoroutine(showAverageReactionTime());
+                }
             }
         }
 
+    }
+
+    IEnumerator showAverageReactionTime()
+    {
+
+        float totalTimes = 0;
+        float avgTime = 0;
+        foreach (float rtime in reactionTimes)
+        {
+            totalTimes += rtime;
+        }
+
+        GameObject highScoreInstance = Instantiate(countDownPrefab, Vector3.zero, Quaternion.identity);
+
+        avgTime = totalTimes / reactionTimes.Length;
+
+        highScoreInstance.GetComponentInChildren<Text>().text = "Congratulations Player: " + playerName + " your average reaction time is: "
+            + avgTime.ToString();
+
+
+        yield return new WaitForSeconds(3f);
+        backToMenu();
     }
 
     void keyboardControl(float keyspeed)
@@ -290,10 +366,7 @@ public class objectGenerator : MonoBehaviour
                 backToMenu();
             }
 
-            if (Input.GetMouseButtonDown(0))
-            {
-                showDurationBetweenClicks();
-            }
+
         }
 
     }
